@@ -44,8 +44,8 @@ public class Fraction {
          Fraction frac = new Fraction();
 
          // set the values
-         frac.setNumerator(1);
-         frac.setDenominator(3);
+         frac.setNumerator(Integer.parseInt(args[0]));
+         frac.setDenominator(Integer.parseInt(args[1]));
 
          // print it
          System.out.print("The fraction is: ");
@@ -55,6 +55,7 @@ public class Fraction {
       }catch(Exception e) {
          e.printStackTrace();
       }
+
    }
 }
 
