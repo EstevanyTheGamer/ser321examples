@@ -4,6 +4,14 @@ apply plugin: 'application'
 //define main class
 mainClassName = 'SimpleServer'
 
+repositories {
+  mavenCentral()
+}
+
+dependencies{
+  implementation 'org.json:json:20171018' // org.json
+  implementation 'com.google.code.gson:gson:2.8.6' // Google JSON
+}
 task SimpleWebServer(type: JavaExec) {
   group 'http'
   description 'Simple Http Demo'

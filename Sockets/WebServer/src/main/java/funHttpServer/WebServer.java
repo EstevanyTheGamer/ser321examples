@@ -17,6 +17,7 @@ write a response back
 package funHttpServer;
 
 import java.io.*;
+import org.json.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,10 +26,13 @@ import java.util.Random;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.nio.charset.Charset;
+import java.util.random.*;
 
 class WebServer {
   public static void main(String args[]) {
+	  System.out.println("Server starting.");
     WebServer server = new WebServer(9000);
+    
   }
 
   /**
@@ -53,8 +57,10 @@ class WebServer {
         in.close();
         out.close();
         sock.close();
+        //System.out.println("server woke.");
       }
     } catch (IOException e) {
+    	//System.out.println("server broke.");
       e.printStackTrace();
     } finally {
       if (sock != null) {
@@ -62,6 +68,7 @@ class WebServer {
           server.close();
         } catch (IOException e) {
           // TODO Auto-generated catch block
+        	//System.out.println("server broke.");
           e.printStackTrace();
         }
       }
@@ -196,24 +203,30 @@ class WebServer {
         } else if (request.contains("multiply?")) {
           // This multiplies two numbers, there is NO error handling, so when
           // wrong data is given this just crashes
-
+        	//Example of a successful query http://127.0.0.1:9000/multiply?num1=5&num2=3
+        	try {
           Map<String, String> query_pairs = new LinkedHashMap<String, String>();
           // extract path parameters
           query_pairs = splitQuery(request.replace("multiply?", ""));
 
-          // extract required fields from parameters
-          Integer num1 = Integer.parseInt(query_pairs.get("num1"));
-          Integer num2 = Integer.parseInt(query_pairs.get("num2"));
-
-          // do math
-          Integer result = num1 * num2;
-
-          // Generate response
-          builder.append("HTTP/1.1 200 OK\n");
-          builder.append("Content-Type: text/html; charset=utf-8\n");
-          builder.append("\n");
-          builder.append("Result is: " + result);
-
+	      // extract required fields from parameters
+	      Integer num1 = Integer.parseInt(query_pairs.get("num1"));
+	      Integer num2 = Integer.parseInt(query_pairs.get("num2"));
+	
+	      // do math
+	      Integer result = num1 * num2;
+	
+	      // Generate response
+	      builder.append("HTTP/1.1 200 OK\n");
+	      builder.append("Content-Type: text/html; charset=utf-8\n");
+	      builder.append("\n");
+	      builder.append("Result is: " + result);
+        	}catch(Exception e) {
+				 builder.append("HTTP/1.1 400 Bad Request\n");
+		         builder.append("Content-Type: text/html; charset=utf-8\n");
+		         builder.append("\n");
+		         builder.append("Error 400: No results avaliable. Please try again with valid integers.");
+			}
           // TODO: Include error handling here with a correct error code and
           // a response that makes sense
 
@@ -221,24 +234,133 @@ class WebServer {
           // pulls the query from the request and runs it with GitHub's REST API
           // check out https://docs.github.com/rest/reference/
           //
-          // HINT: REST is organized by nesting topics. Figure out the biggest one first,
-          //     then drill down to what you care about
           // "Owner's repo is named RepoName. Example: find RepoName's contributors" translates to
           //     "/repos/OWNERNAME/REPONAME/contributors"
+    	try {
+    		Map<String, String> query_pairs = new LinkedHashMap<String, String>();
+            query_pairs = splitQuery(request.replace("github?", ""));
+            String json = fetchURL("https://api.github.com/" + query_pairs.get("query") + ("?per_page=50"));
+            System.out.println(json);
+            System.out.println();
+            builder.append("HTTP/1.1 200 OK\n");
+            builder.append("Content-Type: text/html; charset=utf-8\n");
+            builder.append("\n");
+            builder.append("Check the todos mentioned in the Java source file");
+            builder.append("\n");
+            // TODO: 
+            
+            //JSONObject newObject = new JSONObject("{" + json + "}") ;
+            //System.out.println("JSON-Object---------------- " + newObject.getString("id"));
+            JSONArray repoArray = new JSONArray(json);
+            System.out.println("JSON-Length---------------- " + repoArray.length());
+            JSONArray newjSON = new JSONArray();
+            
+            // go through all the entries in the JSON array (so all the repos of the user)
+            for(int i=0; i<repoArray.length(); i++){
+          	    System.out.println("JSON-Object---------------- " + i);
+          	    builder.append("(JSON-Object---------------- " + i);
+          	    builder.append("\n");
+          	    // now we have a JSON object, one repo
+          	    JSONObject repo = repoArray.getJSONObject(i);
 
-          Map<String, String> query_pairs = new LinkedHashMap<String, String>();
-          query_pairs = splitQuery(request.replace("github?", ""));
-          String json = fetchURL("https://api.github.com/" + query_pairs.get("query"));
-          System.out.println(json);
+          	    // Retrieve the repository ID using repo.getInt("id")
+          	    int id = repo.getInt("id");
+          	    System.out.println(id);
+          	    builder.append(" ID: "+ id);
+          	    builder.append(System.getProperty("line.separator"));
+          	    
+          	    // get repo name
+          	    String repoName = repo.getString("full_name");
+          	    System.out.println(repoName);
+          	    builder.append(" Repo name: " + repoName);
+          	    builder.append("\n");
+          	    
+          	    // owner is a JSON object in the repo object, get it and save it in own variable then read the login name
+          	    JSONObject owner = repo.getJSONObject("owner");
+          	    String ownername = owner.getString("login");
+          	    System.out.println(ownername);
+          	    builder.append(" Owner name: " + ownername);
+          	    builder.append("\n)");
+          	    
+          	    // create a new object for the repo we want to store add the repo name and ownername to it
+          	    JSONObject newRepo = new JSONObject();
+          	    newRepo.put("name", repoName);
+          	    newRepo.put("owner", ownername);
+          	    newRepo.put("id", id);
 
-          builder.append("HTTP/1.1 200 OK\n");
-          builder.append("Content-Type: text/html; charset=utf-8\n");
-          builder.append("\n");
-          builder.append("Check the todos mentioned in the Java source file");
-          // TODO: Parse the JSON returned by your fetch and create an appropriate
-          // response based on what the assignment document asks for
+          	    // Add newRepo to newjSON array
+          	    newjSON.put(newRepo);
+          	    //System.out.println(newRepo.toString());
+  	          
+            }
+    	}catch(Exception e) {
+        	  builder.append("HTTP/1.1 404 Request not found\n");
+              builder.append("Content-Type: text/html; charset=utf-8\n");
+              builder.append("\n");
+              builder.append("No results avaliable. Please try again with valid integers.");
+          }
+     
+           
+          
+        } else if (request.contains("randomNumberInRange?")){
+            //Returns random number within a range
+        	//Example: http://127.0.0.1:9000/randomNumberInRange?min=10&max=12
+        	try {
+                Map<String, String> query_pairs = new LinkedHashMap<String, String>();
+                // extract path parameters
+                query_pairs = splitQuery(request.replace("randomNumberInRange?", ""));
 
-        } else {
+                // extract required fields from parameters
+                Integer min = Integer.parseInt(query_pairs.get("min"));
+                Integer max = Integer.parseInt(query_pairs.get("max"));
+                System.out.println("min =" + min + " max = "+ max);
+      	
+				  // do math
+				  Random random = new Random();
+				  int result = random.nextInt(min , max + 1);
+				  // Generate response
+				  builder.append("HTTP/1.1 200 OK\n");
+				  builder.append("Content-Type: text/html; charset=utf-8\n");
+				  builder.append("\n");
+				  builder.append("Random int is: " + result);
+				}catch(Exception e) {
+					 builder.append("HTTP/1.1 400 Bad Request\n");
+					 builder.append("Content-Type: text/html; charset=utf-8\n");
+					 builder.append("\n");
+					 builder.append("Error 400: No results avaliable. Invalid input.");
+				}
+
+            
+            
+        }else if (request.contains("randomDiceRoller?")){
+        	//Returns a random value based on numberDice and dieSize
+        	//Example: /randomDiceRoller?numberDice=5&dieSize=6
+            try {
+            	Map<String, String> query_pairs = new LinkedHashMap<String, String>();
+                query_pairs = splitQuery(request.replace("randomDiceRoller?", ""));
+            	Integer numberDice = Integer.parseInt(query_pairs.get("numberDice"));
+                Integer dieSize = Integer.parseInt(query_pairs.get("dieSize"));
+                int result = 0;
+                for(int i = 0; i < numberDice; i++) {
+                	Random random = new Random();
+                	int dieRoll = random.nextInt(1 , dieSize + 1);
+                	result += dieRoll;
+                }
+                builder.append("HTTP/1.1 200 OK\n");
+				builder.append("Content-Type: text/html; charset=utf-8\n");
+				builder.append("\n");
+				builder.append("The random roll of " + numberDice + " dice of die size " + dieSize + "  is: " + result);
+            }catch(Exception e) {
+            	builder.append("HTTP/1.1 400 Bad Request\n");
+ 		        builder.append("Content-Type: text/html; charset=utf-8\n");
+ 		        builder.append("\n");
+ 		        builder.append("Error 400: For randomDiceRoller. No results avaliable. Invalid input.");
+            }
+            
+            
+            
+        }else {
+        
           // if the request is not recognized at all
 
           builder.append("HTTP/1.1 400 Bad Request\n");
@@ -249,6 +371,8 @@ class WebServer {
 
         // Output
         response = builder.toString().getBytes();
+        
+        
       }
     } catch (IOException e) {
       e.printStackTrace();
