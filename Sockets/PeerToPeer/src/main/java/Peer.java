@@ -196,11 +196,11 @@ public class Peer {
 		System.out.println("Hello " + username + " and welcome! Your port will be " + args[1]);
 
 		int size = args.length;
-		System.out.println(size);
-		if (size == 4) {
+		System.out.println("Arguments size: "size);
+		if (size == 3 || size == 2) {
 			System.out.println("Started peer");
         } else {
-            System.out.println("Expected: <name(String)> <peer(String)> <leader(String)> <isLeader(bool-String)>");
+            System.out.println("Expected: <username(String)> <portToCreate(String)> <portToConnect(String)>");
             System.exit(0);
         }
 
@@ -211,11 +211,6 @@ public class Peer {
         String[] hostPort = args[2].split(":");
         SocketInfo s = new SocketInfo(hostPort[0], Integer.valueOf(hostPort[1]));
         System.out.println(args[3]);
-        if (args[3].equals("true")){
-			System.out.println("Is leader");
-			peer.setLeader(true, s);
-		} else {
-			System.out.println("Pawn");
 
 			// add leader to list 
 			peer.addPeer(s);
